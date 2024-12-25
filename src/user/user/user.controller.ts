@@ -4,6 +4,7 @@ import {
   Header,
   HttpCode,
   HttpRedirectResponse,
+  Inject,
   Param,
   Post,
   Query,
@@ -13,15 +14,30 @@ import {
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { UserService } from './user.service';
+import { Connection } from '../connection/connection';
+import { MailService } from '../mail/mail.service';
+import { UserRepository } from '../user-repository/user-repository';
 
 @Controller('/api/users')
 export class UserController {
-  constructor(private service: UserService) {}
-  
+  constructor(
+    private service: UserService,
+    private connection: Connection,
+    private mailService: MailService,
+    @Inject('EmailService') private emailService: MailService,
+    private userRepository: UserRepository,
+  ) {}
+
+  @Get('/connection')
+  async getConnection(): Promise<string> {
+    this.userRepository.save();
+    this.mailService.send();
+    this.emailService.send();
+    return this.connection.getName();
+  }
+
   @Get('/hello')
-  async sayHello(
-    @Query('name') name: string,
-  ): Promise<string> {
+  async sayHello(@Query('name') name: string): Promise<string> {
     return this.service.sayHello(name);
   }
 
@@ -56,7 +72,6 @@ export class UserController {
   redirect(): HttpRedirectResponse {
     return { url: 'https://nestjs.com', statusCode: 301 };
   }
-
 
   @Get('/:id')
   getById(@Param('id') id: string): string {
